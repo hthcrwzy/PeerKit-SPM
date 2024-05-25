@@ -68,17 +68,18 @@ func didDisconnect(myPeerID: MCPeerID, peer: MCPeerID) {
 }
 
 func didReceiveData(_ data: Data, fromPeer peer: MCPeerID) {
-    if let dict = NSKeyedUnarchiver.unarchiveObject(with: data) as? [String: AnyObject],
-        let event = dict["event"] as? String,
-        let object = dict["object"] {
-            DispatchQueue.main.async {
-                if let onEvent = onEvent {
-                    onEvent(peer, event, object)
-                }
-                if let eventBlock = eventBlocks[event] {
-                    eventBlock(peer, object)
-                }
-            }
+    guard let dict = try? NSKeyedUnarchiver.unarchivedObject(ofClass: NSDictionary.self, from: data) as? [String: AnyObject],
+          let event = dict["event"] as? String,
+          let object = dict["object"] 
+    else { return }
+
+    DispatchQueue.main.async {
+        if let onEvent = onEvent {
+            onEvent(peer, event, object)
+        }
+        if let eventBlock = eventBlocks[event] {
+            eventBlock(peer, object)
+        }
     }
 }
 
@@ -122,12 +123,11 @@ public func sendEvent(_ event: String, object: AnyObject? = nil, toPeers peers: 
         rootObject["object"] = object
     }
 
-    let data = NSKeyedArchiver.archivedData(withRootObject: rootObject)
-
-    do {
-        try session?.send(data, toPeers: peers, with: .reliable)
-    } catch _ {
+    guard let data = try? NSKeyedArchiver.archivedData(withRootObject: rootObject, requiringSecureCoding: false) else {
+        return
     }
+    
+    try? session?.send(data, toPeers: peers, with: .reliable)
 }
 
 public func sendResourceAtURL(_ resourceURL: URL,
