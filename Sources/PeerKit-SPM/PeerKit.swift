@@ -68,10 +68,10 @@ func didDisconnect(myPeerID: MCPeerID, peer: MCPeerID) {
 }
 
 func didReceiveData(_ data: Data, fromPeer peer: MCPeerID) {
-    guard let dict = try? NSKeyedUnarchiver.unarchivedObject(ofClass: NSDictionary.self, from: data) as? [String: AnyObject],
-          let event = dict["event"] as? String,
-          let object = dict["object"] 
+    guard let dict = try? NSKeyedUnarchiver.unarchivedObject(ofClass: NSArray.self, from: data) as? [AnyObject],
+          let event = dict[0] as? String
     else { return }
+    let object = dict[1]
 
     DispatchQueue.main.async {
         if let onEvent = onEvent {
@@ -117,16 +117,16 @@ public func sendEvent(_ event: String, object: AnyObject? = nil, toPeers peers: 
         return
     }
 
-    var rootObject: [String: AnyObject] = ["event": event as AnyObject]
+    var rootObject: [AnyObject] = [event as AnyObject]
 
     if let object: AnyObject = object {
-        rootObject["object"] = object
+        rootObject.append(object)
     }
 
     guard let data = try? NSKeyedArchiver.archivedData(withRootObject: rootObject, requiringSecureCoding: false) else {
         return
     }
-    
+
     try? session?.send(data, toPeers: peers, with: .reliable)
 }
 
