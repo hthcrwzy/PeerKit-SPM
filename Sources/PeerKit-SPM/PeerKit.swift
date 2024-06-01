@@ -68,7 +68,7 @@ func didDisconnect(myPeerID: MCPeerID, peer: MCPeerID) {
 }
 
 func didReceiveData(_ data: Data, fromPeer peer: MCPeerID) {
-    guard let dict = try? NSKeyedUnarchiver.unarchivedObject(ofClass: NSArray.self, from: data) as? [AnyObject],
+    guard let dict = try? NSKeyedUnarchiver.unarchivedObject(ofClasses: [NSArray.self, NSString.self], from: data) as? [AnyObject],
           let event = dict[0] as? String
     else { return }
     let object = dict[1]
